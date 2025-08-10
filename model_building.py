@@ -18,25 +18,6 @@ from sklearn.metrics import (
 from file_processing import load_from_json, save_to_json
 
 
-def load_dataset(file_path):
-    """Create pandas dataframe."""
-    try:
-        df = pd.read_csv(file_path)
-    except FileNotFoundError as missing_error:
-        print(f"File not found error: {missing_error.args}")
-    else:
-        return df
-
-
-def check_data_sanity(df):
-    """Check dataframe for healthiness."""
-    try:
-        assert (len(df.iloc[0]) == 133)
-        assert (len(df.iloc[:, 0]) == df.shape[0])
-    except AssertionError as assert_err:
-        df.drop("Unnamed: 0", axis=1, inplace=True)
-
-
 def extract_features_target_columns(df):
     """Extract features and target columns from dataframe."""
     return df.iloc[:, :-1], df.iloc[:, -1]
@@ -52,6 +33,9 @@ def train_val_test_split(df):
     test_df = df[train_size + val_size:]
 
     features, target = extract_features_target_columns(df)
+    train_df = shuffle_data(train_df)
+    val_df = shuffle_data(val_df)
+    test_df = shuffle_data(test_df)
 
     X_train, y_train = train_df[features.columns], train_df[target.name]
     X_val, y_val = val_df[features.columns], val_df[target.name]
@@ -163,7 +147,13 @@ def create_comparison_dataframe(test_data, predictions):
     })
 
 
+def shuffle_data(df):
+    """Shuffle data"""
+    return df.sample(frac=1).reset_index(drop=True)
+
+
 def make_prediction(model, X_test, y_test):
+    """Predict the outcome from the model"""
     prediction_classes = model.predict(X_test)
     predictions = prediction_classes.argmax(axis=1)
 
@@ -175,30 +165,3 @@ def make_prediction(model, X_test, y_test):
 
     comparison_matrix = create_comparison_dataframe(y_test, predictions)
     print(comparison_matrix.head())
-
-
-if __name__ == "__main__":
-    full_disease_dataset = load_dataset("full_disease_dataset.csv")
-    save_to_json(full_disease_dataset["disease_str"].unique(), "disease.json")
-
-    disease_df = load_dataset("disease_dataset.csv")
-    check_data_sanity(disease_df)
-
-    (
-        train_features,
-        train_target,
-        val_features,
-        val_target,
-        test_features,
-        test_target
-    ) = train_val_test_split(disease_df)
-
-    mlp_model = create_model(
-        train_features, train_target,
-        val_features, val_target,
-        "disease_mlp_model.keras"
-    )
-
-    make_prediction(mlp_model, test_features, test_target)
-
-
