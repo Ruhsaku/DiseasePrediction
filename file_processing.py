@@ -1,7 +1,8 @@
 import json
-import pandas as pd
 
-def save_to_json(data_series:pd.Series, filename:str):
+
+def save_to_json(data_series, filename:str):
+    """Create json file from dataframe column."""
     hash_map = {}
 
     for index, value in enumerate(data_series):
@@ -17,6 +18,7 @@ def save_to_json(data_series:pd.Series, filename:str):
 
 
 def load_from_json(filename:str):
+    """Read json into hash map."""
     try:
         with open(filename, "r") as json_file:
             return json.load(fp=json_file)
