@@ -4,7 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import data_analysis as analysis
 import model_building as mb
-from file_processing import save_to_json
+from file_processing import save_to_json, load_from_json
+from tensorflow.keras.models import load_model
+
 
 if __name__ == "__main__":
     st.title("Multilayer Perceptron to predict patient's disease!")
@@ -51,13 +53,11 @@ if __name__ == "__main__":
             st.write(disease_dataset.head())
 
         st.subheader("Choose Which Columns Are Necessary To Train The Model")
-        # if "selected_columns" not in st.session_state:
-        #     st.session_state.selected_columns = list(disease_dataset.columns)
-        # valid_selected = [col for col in st.session_state.selected_columns if col in disease_dataset.columns]
 
         columns = st.multiselect("Choose Columns for the model",
                                  options=disease_dataset.columns,
-                                 default=disease_dataset.columns)
+                                 default=disease_dataset.columns,
+                                 key="training_dataset")
         disease_dataset = disease_dataset[columns]
 
         st.subheader("Split Data and Train Model")
@@ -147,3 +147,43 @@ if __name__ == "__main__":
                 st.write(mb.extract_classification_report(target, predictions))
             elif option == options[3]:
                 st.write(mb.create_comparison_dataframe(target, predictions))
+
+
+        st.subheader("Choose Symptoms To Predict Disease")
+        if "disease_dataset" in st.session_state:
+            model = load_model("disease_mlp_model.keras")
+            disease_dataset = st.session_state["disease_dataset"]
+            disease_dataset = disease_dataset.iloc[:, :-1]
+
+            if "selected_symptoms" not in st.session_state:
+                st.session_state.selected_symptoms = []
+            else:
+                selected_symptoms = st.session_state["selected_symptoms"]
+
+            symptoms = st.multiselect("Choose Columns for the model",
+                                      options=disease_dataset.columns,
+                                      default=st.session_state.selected_symptoms,
+                                      key="testing_dataset")
+
+            vector_of_symptoms = np.zeros(132)
+            for s in symptoms:
+                vector_of_symptoms[disease_dataset.columns.get_loc(s)] = 1
+
+            length_chosen_symptoms = len(symptoms)
+            diseases = load_from_json("disease.json")
+
+            if st.button("Predict") and length_chosen_symptoms > 0:
+                predictions = model.predict(np.array([vector_of_symptoms]))[0]
+                top_5_predictions = np.sort(predictions)[::-1][:5]
+                top_5_diseases = np.argsort(predictions)[::-1][:5]
+                top_5_diseases_list = [diseases[str(item)] for item in top_5_diseases]
+
+                THRESHOLD = 0.95
+                if top_5_predictions[0] >= THRESHOLD:
+                    st.success(f"Most Likely Disease For The Patient: (***{top_5_diseases_list[0]}***)")
+                else:
+                    st.write("Top 5 Possible Diseases:")
+                    st.write(pd.DataFrame({
+                        "disease": top_5_diseases_list,
+                        "probability": [f"{p*100:.2f}%" for p in top_5_predictions]
+                    }, index=range(1, 6)))
