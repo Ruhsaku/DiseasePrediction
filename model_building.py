@@ -1,9 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
-from keras.src.ops import dtype
-from pyarrow.dataset import dataset
-from streamlit import dataframe
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Input
 from tensorflow.keras.callbacks import EarlyStopping
@@ -15,7 +11,7 @@ from sklearn.metrics import (
     recall_score,
     classification_report
 )
-from file_processing import load_from_json, save_to_json
+from file_processing import load_from_json
 
 
 def extract_features_target_columns(df):
@@ -76,19 +72,19 @@ def create_model(X_train, y_train, X_val, y_val, model_name=None):
         verbose=1
     )
 
-    plot_train_val_loss_functions(history)
     model.save(model_name)
 
-    return model
+    return model, history
 
 
-def print_metrics(test_data, predictions):
-    """Print classification metrics."""
-    print(classification_report(test_data, predictions))
+def extract_classification_report(test_data, predictions):
+    """Extract classification metrics."""
+    return classification_report(test_data, predictions)
 
 
 def plot_train_val_loss_functions(history):
     """Plot training and validation loss functions."""
+    fig = plt.figure()
     lowest_point = min(history.history["val_loss"])
     plt.plot(history.history["loss"][10:], label="Training Error")
     plt.plot(history.history["val_loss"][10:], label="Validation Error")
@@ -102,13 +98,12 @@ def plot_train_val_loss_functions(history):
     plt.title("Training History")
     plt.legend()
     plt.grid()
-    plt.show()
-    print(f"Lowest Point Value from Validation Loss: {lowest_point}")
+    return fig
 
 
 def plot_actual_predicted_values(test_data, predictions):
     """Plot actual vs. predicted values from the model."""
-    plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 6))
     plt.plot(test_data, label='Actual', linewidth=5)
     plt.plot(predictions, label='Predicted')
     plt.yticks(range(0, 42))
@@ -117,7 +112,7 @@ def plot_actual_predicted_values(test_data, predictions):
     plt.ylabel("Disease")
     plt.legend()
     plt.grid()
-    plt.show()
+    return fig
 
 
 def compare_actual_predicted_values(test_data, predictions):
@@ -130,9 +125,9 @@ def compare_actual_predicted_values(test_data, predictions):
             predicted_false += 1
         else:
             predicted_true += 1
-    print(f"Total Values in Data: {len(test_data)}")
-    print(f"Model Predicted Correctly: {predicted_true}")
-    print(f"Model Predicted Incorrectly: {predicted_false}")
+    total_data = len(test_data)
+
+    return total_data, predicted_true, predicted_false
 
 
 def create_comparison_dataframe(test_data, predictions):
@@ -152,16 +147,9 @@ def shuffle_data(df):
     return df.sample(frac=1).reset_index(drop=True)
 
 
-def make_prediction(model, X_test, y_test):
+def make_prediction(model, X_test):
     """Predict the outcome from the model"""
     prediction_classes = model.predict(X_test)
     predictions = prediction_classes.argmax(axis=1)
 
-    print_metrics(y_test, predictions)
-    y_test = np.array(y_test, dtype=np.int64).flatten()
-
-    plot_actual_predicted_values(y_test, predictions)
-    compare_actual_predicted_values(y_test, predictions)
-
-    comparison_matrix = create_comparison_dataframe(y_test, predictions)
-    print(comparison_matrix.head())
+    return predictions
