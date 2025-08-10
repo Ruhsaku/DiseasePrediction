@@ -173,7 +173,7 @@ if __name__ == "__main__":
             diseases = load_from_json("disease.json")
 
             if st.button("Predict") and length_chosen_symptoms > 0:
-                predictions = model.predict(np.array([vector_of_symptoms]))[0]
+                predictions = model.predict(vector_of_symptoms.reshape(1, -1))[0]
                 top_5_predictions = np.sort(predictions)[::-1][:5]
                 top_5_diseases = np.argsort(predictions)[::-1][:5]
                 top_5_diseases_list = [diseases[str(item)] for item in top_5_diseases]
