@@ -54,7 +54,7 @@ def create_model(X_train, y_train, X_val, y_val, model_name=None):
         Dropout(0.2),
         Dense(66, activation="relu"),
         Dropout(0.2),
-        Dense(42, activation="softmax")
+        Dense(41, activation="softmax")
     ])
 
     model.compile(
@@ -94,7 +94,7 @@ def plot_train_val_loss_functions(history):
              color="red",
              marker="o", ms=5)
     plt.xlabel("Epochs")
-    plt.ylabel("MSE Loss")
+    plt.ylabel("Loss")
     plt.title("Training History")
     plt.legend()
     plt.grid()
@@ -106,7 +106,7 @@ def plot_actual_predicted_values(test_data, predictions):
     fig = plt.figure(figsize=(12, 6))
     plt.plot(test_data, label='Actual', linewidth=5)
     plt.plot(predictions, label='Predicted')
-    plt.yticks(range(0, 42))
+    plt.yticks(range(0, 41))
     plt.title("Actual vs Predicted Disease")
     plt.xlabel("Patient")
     plt.ylabel("Disease")
